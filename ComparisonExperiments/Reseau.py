@@ -1,14 +1,12 @@
 """
-Ce fichier contient les définitions des classes Réseau, Brindille et Branche.
-Ces trois classes ont été développées pour analyser les réseaux de champignons
-de Podospora anserina en définissant de manière unique un graphe dynamique pour
-chaque expérience.
-Pour plus de détail, se référer à l'article :
+This file contains the definitions of the classes Reseau, Brindille, and Branche.
+These three classes were developed to analyse the fungal networks of *Podospora anserina* by uniquely defining a dynamic graph for each experiment.
+For more details, refer to the article:
 "Full identification of a growing and branching network's spatio-temporal 
-structures", T. Chassereau, F. Chapeland-Leclerc et E. Herbert, 2024-25
+structures", T. Chassereau, F. Chapeland-Leclerc, and E. Herbert, 2024-25
 
-Version réduite ici qui ne permet pas la reconstruction à partir des images mais 
-permet de travailler avec les objets Reseau pour l'analyse ici souhaitée.
+This is a reduced version that does not allow reconstruction from images but 
+allows working with the Reseau objects for the intended analysis.
 """
 
 import numpy as np #For everything
@@ -20,29 +18,25 @@ import pickle #For saving object
 
 class Reseau():
     """
-    Définition de la classe Reseau.
-    
-    Chaque instance de cette classe regroupe l'ensemble des informations 
-    nécessaires à l'analyse d'une expérience à savoir l'ensemble des images
-    en niveaux de gris au cours du temps, le temps de début d'analyse et
-    d'arrêt, les deux images binarisées correspondantes et le graphe spatial
-    associé à la dernière image.
-    Pour plus d'information sur la génération du graphe spatial, se 
-    référer aux fichiers 'TotalReconstruction.py' et 'Vectorisation.py'.
+    Definition of the Reseau class.    
+
+    Each instance of this class contains all the information necessary for analysing an experiment, namely all the grayscale images
+    over time, the start and end times of the analysis, the two corresponding binarised images, and the spatial graph associated with the last     image.
+
+    For more information on generating the spatial graph, refer to the files 'TotalReconstruction.py' and 'Vectorisation.py'.
     """
     #float|int : Length treshold between 2 nodes over which it is considered false
     SEUIL_LONG:float = 10 # in hyphal diameter unit
-    #int : Seuil de "latence" avant classification en branche latérale
+    #int : "Latency" threshold before classification as a lateral branch
     SEUIL_LAT:int = 5 #frames
-    #float|int : Seuil longueur départ de branche
+    #float|int : Length threshold for the start of a branch
     SEUIL_DEPART:float = 2 # in hyphal diameter unit
-    #int : Seuil nombre de boucle lors du calcul de la dynamique 
-    #      pour considérer un cas suspect.
+    #int : Threshold for the number of loops during the calculation of the dynamics before considering a case as suspicious.
     SEUIL_BOUCLE_DYNAMIQUE:int = 40
 
     """
     ===========================================================================
-    Declaration et representation
+    Declaration and representation
     """
     def __init__(self,
                  name:str, #str, name of the experiment
@@ -58,7 +52,7 @@ class Reseau():
                  diameter:float = 7#float, Hyphal diamater in pixels
                  ):
         """
-        Définit l'initialisation d'une instance de Réseau.
+        Defines the initialisation of an instance of Reseau.
         """
         self.name = name
         self.g = g
@@ -77,7 +71,7 @@ class Reseau():
         self.n2x = nx.get_node_attributes(g,"x")
         self.n2y = nx.get_node_attributes(g,"y")
         self.n2t = {}
-        #Initialisation des dossiers de sortie
+        #Initialisation of the output files
         directories = ["","GraphesVisu",
                        "PotentialErrors","Binarization"]
         for directory in directories:
@@ -86,8 +80,7 @@ class Reseau():
 
     def __repr__(self) -> str:
         """
-        Définit ce qui s'affiche lorsque qu'on utilise 'print' avec le réseau
-        comme argument.
+        Defines what is displayed when using 'print' with the network as an argument.
         """
         repr = "\n"
         repr += "-"*80
@@ -100,11 +93,11 @@ class Reseau():
 
     """
     ===========================================================================
-    Utilitaires
+    Utilities
     """
     def save(self,suffix:str):
         """
-        Save the network in gpickle format
+        Saves the network in gpickle format
         """
         file = self.output_dir+self.name+"_"+suffix+".gpickle"
         with open(file,"wb") as f:
@@ -113,8 +106,7 @@ class Reseau():
     
     def network_at(self, f):
         """
-        Renvoie le sous réseau g_frame extrait du réseau entier self.g contenant
-        uniquement les points vérifiant t<=f
+        Returns the sub-network g_frame extracted from the entire network self.g containing only the points satisfying t <= f
         """
         g_frame = self.g.copy()
         toKeep = [n for n in g_frame.nodes if self.n2t[n]<=f]
@@ -124,7 +116,7 @@ class Reseau():
 
     def image_at(self, f:int):
         """
-        Return the image corresponding to frame f open as numpy array
+        Returns the image corresponding to frame f open as numpy array
         """
         image = np.asarray(Image.open(self.imgs.format(f)))
         return image
@@ -132,7 +124,7 @@ class Reseau():
 
     def classification_nature_branches(self,threshold:float):
         """
-        Classify each branch according to the latency before branching
+        Classifies each branch according to the latency before branching
         """
         for b in self.branches:
             b.nature = "Apical" if b.get_tstart()-b.t[0] <= threshold else "Lateral"
@@ -140,7 +132,7 @@ class Reseau():
 
     def convert2txt(self,path2file:str)->nx.Graph: 
         """
-        Convert the network to a txt file of the form:
+        Converts the network to a txt file of the form:
         U,V,XU,YU,TU,XV,YV,TV,B
         With (U,V) the edges X_,Y_,T_ the coordinates of the point and B the 
         index of the corresponding branch.
@@ -164,7 +156,7 @@ class Reseau():
     """
     def show_at(self,t:float, ax)->None:
         """
-        Draw the network at the instant 't' on the axe 'ax'
+        Draws the network at the instant 't' on the axe 'ax'
         """
         degree2size = {1:10,2:2,3:14}
         degree2color = {1:"cyan",2:"slategrey",3:"orangered"}
@@ -181,7 +173,7 @@ class Reseau():
     @property
     def times(self)->np.ndarray:
         """
-        Return the instant from self.start to self.end
+        Returns the instant from self.start to self.end
         """
         times = np.arange(self.start,self.end+1)
         return times
@@ -189,7 +181,7 @@ class Reseau():
     @property
     def Nbranches(self)->np.ndarray:
         """
-        Return Nbranches the total number of branches at time t 
+        Returns Nbranches the total number of branches at time t 
         for t ranging from self.start to self.end
         """
         N_t0 = np.array([b.get_tstart() for b in self.branches])
@@ -199,7 +191,7 @@ class Reseau():
     @property
     def total_length(self)->np.ndarray:
         """
-        Return total_length the length of the reseau
+        Returns total_length the length of the reseau
         for t ranging from self.start to self.end
         """
         L_edges = np.sqrt([(self.n2x[u]-self.n2x[v])**2+
@@ -218,7 +210,7 @@ Brindilles
 """
 class Brindille():
     """
-    Définition de la classe des brindilles.
+    Definition of the Brindilles class.
     """
     def __init__(self,
                 index:int,
@@ -228,13 +220,12 @@ class Brindille():
                 n2t:dict[int,float],
                 inBranches:list = [],
                 confiance:float = 0):
-        self.index = index #index de cette brindille
+        self.index = index #index of the twig
         self.noeuds = noeuds 
         self.n2x = n2x
         self.n2y = n2y 
         self.n2t = n2t 
-        self.inBranches = inBranches #liste des index des branches
-                                        #contenant cette brindille
+        self.inBranches = inBranches #list of the indices of all the branches containing the twig
         self.confiance = confiance
     
     def __repr__(self) -> str:
@@ -243,7 +234,7 @@ class Brindille():
     
     def abscisse_curviligne(self)->np.ndarray:
         """
-        Renvoie la liste des abscisses curvilignes des noeuds de la branche
+        Returns the list of curvilinear abscissas of the branch nodes
         """
         pos = np.array([[self.n2x[n],self.n2y[n]] for n in self.noeuds])
         abscisse = np.sqrt(np.sum((pos[1:,:]-pos[:-1,:])**2,axis=-1))
@@ -253,14 +244,14 @@ class Brindille():
     
     def get_tstart(self)->float:                                        
         """
-        Renvoie la coordonnée t correspondant au début de la brindille.
+        Returns the coordinate t corresponding to the start of the twig.
         """
         tstart = self.n2t[self.noeuds[1]]
         return tstart
 
     def get_tend(self)->float:
         """
-        Renvoie la coordonnée t correspondant à la fin de la brindille.
+        Returns the coordinate t corresponding to the end of the twig.
         """
         tt = [self.n2t[n] for n in self.noeuds]
         tend = np.max(tt)
@@ -268,23 +259,21 @@ class Brindille():
 
     def is_growing_at(self, t:float)->bool:
         """
-        Renvoie si oui ou non la branche est en train de croître 
-        à l'instant t passé en argument.
+        Returns whether or not the branch is growing at the time t given as an argument.
         """
         return self.get_tstart()<=t<=self.get_tend()
     
     def detection_latence(self, seuil:int = 4)->bool:
         """
-        Départ avec latence -> True 
-        Départ sans latence -> False
+        Start with latency -> True 
+        Start without latency -> False
         """
         bLatence = bool(self.get_tstart()-self.n2t[self.noeuds[0]] < seuil)
         return bLatence
     
     def unit_vector(self, end, r = np.inf):
         """
-        Calcule le vecteur unitaire au niveau de l'extrémité spécifiée 
-        mesuré avec un rayon r.
+        Computes the unit vector at the specified endpoint measured with a radius r.
         """
         abscisse = self.abscisse_curviligne()
         if end not in [self.noeuds[0],self.noeuds[-1]]:
@@ -306,7 +295,7 @@ class Brindille():
     
     def reverse(self):
         """
-        Reverse the twig.
+        Reverses the twig.
         """
         self.noeuds.reverse()
         self.confiance = - self.confiance
@@ -314,7 +303,7 @@ class Brindille():
     
     def calcul_confiance(self, seuil:float)->float:
         """
-        Calcule la confiance dans l'orientation de la brindille
+        Computes the confidence in the orientation of the twig
         """
         tt = np.array([self.n2t[n] for n in self.noeuds])
         dtt = tt[1:]-tt[:-1]
@@ -330,13 +319,13 @@ class Brindille():
     
     def get_apex_at(self, t:float, index:bool = False)->int:
         """
-        Return the current 'apex' on the twig|branch at time t
+        Returns the current 'apex' on the twig|branch at time t
         if t>tEnd then the apex is the last node of the twig|branch
         if index == True then return also the index of apex in b.noeuds 
         """
         tt = [self.n2t[n] for n in self.noeuds]
         if self.get_tstart()>t:
-            raise ValueError("La branche n'est pas encore apparu à ce moment.")
+            raise ValueError("The branch has not yet appeared at this time.")
         iapex = next((i for i,ti in enumerate(tt[1:])
                     if ti > t),
                     len(tt)-1)
@@ -347,7 +336,7 @@ class Brindille():
 
     def get_all_apex(self)->tuple[list[int],list[int]]:
         """
-        Return all the successive apex at the different growth time
+        Returns all the successive apexes at the different growth time
         """
         tstart = int(self.get_tstart())
         tend = int(self.get_tend())
@@ -373,35 +362,35 @@ class Brindille():
     @property
     def x(self)->list[float]:
         """
-        Return the list of x coordinate of each node in twig.nodes
+        Returns the list of x coordinates of each node in twig.nodes
         """
         return [self.n2x[n] for n in self.noeuds]
     
     @property
     def y(self)->list[float]:
         """
-        Return the list of y coordinate of each node in twig.nodes
+        Returns the list of y coordinates of each node in twig.nodes
         """
         return [self.n2y[n] for n in self.noeuds]
     
     @property
     def t(self)->list[float]:
         """
-        Return the list of t coordinate of each node in twig.nodes
+        Returns the list of t coordinates of each node in twig.nodes
         """
         return [self.n2t[n] for n in self.noeuds]
     
     @property
     def s(self)->np.ndarray:
         """
-        Return the list of s, arc length of each node in twig.nodes
+        Returns the list of s, arc length of each node in twig.nodes
         """
         return self.abscisse_curviligne()
 
     @property
     def theta(self,radius:float = 7)->np.ndarray:
         """
-        Return the list of theta, the orientation of the twig.
+        Returns the list of theta, the orientation of the twig.
         Orientation is absolute.
         """
         x = np.array(self.x)
@@ -423,7 +412,7 @@ class Brindille():
     
     def tangent(self,noeud)->np.ndarray:
         """
-        Return the unit tangent vector of the twig at node 'noeud'.
+        Returns the unit tangent vector of the twig at node 'noeud'.
         """
         if noeud not in self.noeuds:
             raise ValueError(f"{noeud} is not in {self}.\nThe argument 'noeud' must be inside twig/branch.noeuds")
@@ -442,19 +431,19 @@ Branches
 """
 class Branche(Brindille):
     """
-    Définition de la classe secondaire des branches.
-    Hérite de la classe secondaire des brindilles.
+    Definition of the secondary class of branches.
+    Inherits the secondary class of brindilles.
     """
     def __init__(self,
-                    index:int, #int, index de la branche
-                    noeuds:list[int], #Liste des noeuds de la branche
+                    index:int, #int, index of the branch
+                    noeuds:list[int], #List of the branch nodes
                     n2x:dict[int,float],
                     n2y:dict[int,float],
                     n2t:dict[int,float],
-                    brindilles:list[int], #Liste des index des brindilles
+                    brindilles:list[int], #List of the brindilles indices
                     nature:str, #nature de la branche : Apical,Lateral,Initial,...
-                    ending:str, #raison de l'arret de croissance : d1, Fusion ?
-                    list_overlap:list = None #Liste des chevauchements
+                    ending:str, #reason the growth arrest : d1, Fusion ?
+                    list_overlap:list = None #List of overlaps
                     ):
         self.index = index
         self.noeuds = noeuds
@@ -472,7 +461,7 @@ class Branche(Brindille):
 
     def grow(self,brindille):
         """
-        Prolongation de la branche par la brindille.
+        Extension of the branch by the twig.
         """
         self.noeuds = [*self.noeuds,*brindille.noeuds[1:]]
         self.brindilles.append(brindille.index)
@@ -480,11 +469,11 @@ class Branche(Brindille):
 
     def normes_vitesses(self, seuil_lat = 4):
         """
-        Calcule et renvoie les normes des vitesses de la branche et la liste des
-        instants correspondant.
-        seuil_lat permet de ne pas prendre en compte les vitesses lentes
-        due à une latence.
-        Renvoie ([],[]) s'il n'est pas possible de définir une vitesse sur la branche
+        Computes and returns the norms of the branch velocities and the list of 
+        corresponding time points.
+        seuil_lat allows excluding slow velocities due to latency.
+
+        Returns ([], []) if it is not possible to define a velocity on the branch
         """
         times,vitesses = self.vecteurs_vitesses(seuil_lat = seuil_lat)
         vs = []
@@ -494,11 +483,12 @@ class Branche(Brindille):
 
     def vecteurs_vitesses(self, seuil_lat = 4):
         """
-        Calcule les vecteurs vitesses de croissance de la branche.
-        Renvoie sous la forme d'un tuple la liste des instants t correspondant 
-        et la liste des vecteurs vitesses.
-        Renvoie [] s'il n'est pas possible de définir une vitesse sur la 
-        branche.
+        Computes the branch growth velocity vectors.
+        Returns a tuple with the list of corresponding time points t
+        and the list of velocity vectors.
+
+        Returns [] if it is not possible to define a velocity on the
+        branch.
         """
         vecteursV = []
         times = []
@@ -506,7 +496,7 @@ class Branche(Brindille):
         abscisse = self.s
         tt = np.array(self.t)
         index = [i for i,t in enumerate(tt[:-1]) if t != tt[i+1]]
-        #index : liste des index où il y a variation de t
+        #index : list of indices at which there is a variation of t
         if index:
             index.append(len(tt)-1)
             for i0,i in zip(index[:-1],index[1:]):
@@ -524,8 +514,7 @@ class Branche(Brindille):
 
     def positions_vitesses(self):     
         """
-        Renvoie la liste des vecteurs vitesses et des positions 
-        correspondantes de la branche.
+        Returns the list of velocity vectors and corresponding positions of the branch.
         """
         dX,dY,dT = self.n2x,self.n2y,self.n2t
         pos = np.array([[dX[n],dY[n]] for n in self.noeuds])
@@ -550,14 +539,14 @@ class Branche(Brindille):
         filtre = np.where(cart_normes>0)
         vecteursV[filtre,0] *= curv_normes[filtre]/cart_normes[filtre]
         vecteursV[filtre,1] *= curv_normes[filtre]/cart_normes[filtre]
-        #Moyenne roulante 
+        #Rolling mean 
         #positions = (positions[1:,:]+positions[:-1,:])/2
         #vecteursV = (vecteursV[1:,:]+vecteursV[:-1,:])/2
         return positions,vecteursV
     
     def apex(self)->list[int]:
         """
-        Renvoie la liste des apex successifs de la branche
+        Returns the list of successive apexes along the branch
         """
         temps = [self.n2t[n] for n in self.noeuds]
         apex = [self.noeuds[i] for i in range(1,len(self.noeuds)-1) if temps[i] < temps[i+1]]
